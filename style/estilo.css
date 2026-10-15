@@ -34,6 +34,14 @@ body {
   border-radius: 12px;
   color: #fff;
   padding: 0.65rem 0.9rem;
+  
+}
+#busca::placeholder {
+  color: #f5f4f3;
+  opacity: 1; 
+}
+.color-text-box{
+  color: #fff;
 }
 
 .cartao-black .form-control:focus {
