@@ -24,12 +24,12 @@
           <!-- LOGIN -->
           <form id="form-login" novalidate>
             <div class="mb-3">
-              <label for="login" class="form-label">Usuário</label>
+              <label for="login-email" class="form-label">E-mail</label>
               <input
-                type="text"
+                type="email"
                 class="form-control"
-                id="login"
-                name="login"
+                id="login-email"
+                name="email"
                 autocomplete="username"
                 required
               />
@@ -68,14 +68,28 @@
             </div>
 
             <div class="mb-3">
-              <label for="reg-login" class="form-label">Usuário</label>
+              <label for="reg-cpf" class="form-label">CPF</label>
               <input
                 type="text"
                 class="form-control"
-                id="reg-login"
-                name="login"
-                autocomplete="username"
-                maxlength="30"
+                id="reg-cpf"
+                name="cpf"
+                inputmode="numeric"
+                placeholder="000.000.000-00"
+                maxlength="14"
+                required
+              />
+            </div>
+
+            <div class="mb-3">
+              <label for="reg-email" class="form-label">E-mail</label>
+              <input
+                type="email"
+                class="form-control"
+                id="reg-email"
+                name="email"
+                autocomplete="email"
+                maxlength="120"
                 required
               />
             </div>

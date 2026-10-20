@@ -41,17 +41,26 @@ linkTroca.addEventListener('click', (event) => {
   alternar(formLogin.classList.contains('d-none') === false);
 });
 
+// Máscara simples de CPF: 000.000.000-00
+formRegistro.cpf.addEventListener('input', (event) => {
+  const n = event.target.value.replace(/\D/g, '').slice(0, 11);
+  event.target.value = n
+    .replace(/^(\d{3})(\d)/, '$1.$2')
+    .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/\.(\d{3})(\d)/, '.$1-$2');
+});
+
 // ---------------------------- LOGIN ----------------------------
 formLogin.addEventListener('submit', async (event) => {
   event.preventDefault();
   limparMensagens();
 
-  const login = formLogin.login.value.trim();
+  const email = formLogin.email.value.trim();
   const senha = formLogin.senha.value;
 
   // Validação no front é só conveniência; a validação de verdade é no servidor
-  if (!login || !senha) {
-    mostrarErro('Preencha usuário e senha.');
+  if (!email || !senha) {
+    mostrarErro('Preencha e-mail e senha.');
     return;
   }
 
@@ -63,16 +72,16 @@ formLogin.addEventListener('submit', async (event) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include', // envia/recebe o cookie de sessão
-      body: JSON.stringify({ login, senha }),
+      body: JSON.stringify({ email, senha }),
     });
 
     if (resposta.ok) {
-      window.location.href = '/painel.html';
+      window.location.href = '/catalogo.html';
       return;
     }
 
-    // Mensagem genérica de propósito: não revela se foi o usuário ou a senha que errou
-    mostrarErro('Usuário ou senha inválidos.');
+    // Mensagem genérica de propósito: não revela se foi o e-mail ou a senha que errou
+    mostrarErro('E-mail ou senha inválidos.');
   } catch (e) {
     mostrarErro('Não foi possível conectar ao servidor.');
   } finally {
@@ -88,11 +97,12 @@ formRegistro.addEventListener('submit', async (event) => {
   limparMensagens();
 
   const nome = formRegistro.nome.value.trim();
-  const login = formRegistro.login.value.trim();
+  const cpf = formRegistro.cpf.value.trim();
+  const email = formRegistro.email.value.trim();
   const senha = formRegistro.senha.value;
   const confirmar = formRegistro.confirmar.value;
 
-  if (!nome || !login || !senha || !confirmar) {
+  if (!nome || !cpf || !email || !senha || !confirmar) {
     mostrarErro('Preencha todos os campos.');
     return;
   }
@@ -109,11 +119,10 @@ formRegistro.addEventListener('submit', async (event) => {
   btnRegistrar.textContent = 'Criando...';
 
   try {
-    // Repare: o front NÃO envia "perfil". Quem define o perfil é o servidor.
     const resposta = await fetch('/api/registrar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome, login, senha }),
+      body: JSON.stringify({ nome, cpf, email, senha }),
     });
 
     if (resposta.ok) {
@@ -124,9 +133,9 @@ formRegistro.addEventListener('submit', async (event) => {
     }
 
     if (resposta.status === 409) {
-      mostrarErro('Esse usuário já existe. Escolha outro.');
+      mostrarErro('CPF ou e-mail já cadastrado.');
     } else if (resposta.status === 400 || resposta.status === 422) {
-      mostrarErro('Dados inválidos. Confira os campos.');
+      mostrarErro('Dados inválidos. Confira o CPF, o e-mail e a senha.');
     } else {
       mostrarErro('Não foi possível criar a conta.');
     }

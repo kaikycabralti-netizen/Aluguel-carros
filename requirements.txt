@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+bcrypt
+itsdangerous
+pydantic[email]
+
+
+"""testar:http://localhost:8000/
+    http://localhost:8000/docs"""
