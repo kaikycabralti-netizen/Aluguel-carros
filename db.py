@@ -1,6 +1,6 @@
 import sqlite3
 
-NOME_BANCO = 'banco_sistema'
+NOME_BANCO = 'banco_sistema.db'
 
 
 def conectar():

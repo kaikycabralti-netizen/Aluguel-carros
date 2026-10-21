@@ -114,7 +114,7 @@ formRegistro.addEventListener('submit', async (event) => {
     mostrarErro('As senhas não conferem.');
     return;
   }
-
+  
   btnRegistrar.disabled = true;
   btnRegistrar.textContent = 'Criando...';
 

@@ -2,7 +2,7 @@ import sqlite3
 
 #cadastro de veiculos
 def cadastrar_veiculo(marca, modelo, ano, placa, status):
-    conexao = sqlite3.connect('banco_sistema')
+    conexao = sqlite3.connect('banco_sistema.db')
     cursor = conexao.cursor()
     cursor.execute('''INSERT INTO veiculos (marca, modelo, ano, placa, status) VALUES (?, ?, ?, ?, ?)''', (marca, modelo, ano, placa, status))
     conexao.commit()
@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
 #deletar veiculos
 def deletar_veiculo(id_veiculo):
-    conexao = sqlite3.connect('banco_sistema')
+    conexao = sqlite3.connect('banco_sistema.db')
     cursor = conexao.cursor()
     cursor.execute('''DELETE FROM veiculos WHERE id = 4''', (id_veiculo,))
     conexao.commit()
@@ -33,7 +33,7 @@ def deletar_veiculo(id_veiculo):
     
 #listagem de veiculos
 def listar_veiculos():
-    conexao = sqlite3.connect('banco_sistema')
+    conexao = sqlite3.connect('banco_sistema.db')
     cursor = conexao.cursor()
     cursor.execute('''SELECT * FROM veiculos''')
     veiculos = cursor.fetchall()
