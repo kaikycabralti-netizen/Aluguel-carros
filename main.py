@@ -7,7 +7,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from db import criar_tabelas
 from auth_routes import auth_router
 from order_routes import order_router
-
+from veiculos_routes import veiculos_router
 # para rodar o código, colocar no terminal: uvicorn main:app --reload
 
 app = FastAPI()
@@ -39,6 +39,9 @@ def pagina_login():
 @app.get("/catalogo.html")
 def pagina_catalogo():
     return FileResponse("view/catalogo.html")
+
+
+app.include_router(veiculos_router)
 
 # Rest APIs
 # GET - leitura/pegar

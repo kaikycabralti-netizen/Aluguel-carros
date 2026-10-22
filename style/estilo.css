@@ -265,3 +265,82 @@ body {
   border-radius: 12px;
   padding: 0.5rem 1.2rem;
 }
+/* =================================================================
+   TELA DE PAGAMENTO
+   ================================================================= */
+
+.pagamento {
+  width: min(520px, 92vw);
+  padding: 0;
+  margin: auto;
+  max-height: 92vh;
+  overflow-y: auto;
+}
+
+.pagamento.cartao-black {
+  background: rgba(22, 22, 25, 0.97);
+}
+
+.pagamento::backdrop {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+.pagamento form {
+  padding: 1.5rem;
+}
+
+.pagamento .btn-close {
+  filter: invert(1);
+}
+
+/* Opções de pagamento (os radios ficam escondidos; o label vira um cartãozinho) */
+.formas {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem;
+}
+
+.formas input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.formas label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.8rem 1rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.formas label:hover {
+  border-color: rgba(212, 175, 55, 0.6);
+}
+
+.formas input:checked + label {
+  border-color: #d4af37;
+  background: rgba(212, 175, 55, 0.14);
+  box-shadow: 0 0 0 0.15rem rgba(212, 175, 55, 0.2);
+}
+
+.formas input:focus-visible + label {
+  outline: 2px solid #f5d76e;
+}
+
+.formas .forma-larga {
+  grid-column: 1 / -1;
+}
+
+/* Caixa com os detalhes da forma escolhida */
+.detalhe {
+  padding: 1rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+}

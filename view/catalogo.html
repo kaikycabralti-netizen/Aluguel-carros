@@ -79,6 +79,87 @@
         Nenhum veículo encontrado com esses filtros.
       </div>
     </main>
+    
+       <!-- Tela de pagamento (abre ao clicar em "Alugar") -->
+    <dialog id="modal-pagamento" class="cartao-black pagamento">
+      <form id="form-pagamento" novalidate>
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <div>
+            <h2 class="h5 mb-1">Forma de pagamento</h2>
+            <p id="pg-resumo" class="text-muted small mb-0"></p>
+          </div>
+          <button type="button" id="pg-fechar" class="btn-close" aria-label="Fechar"></button>
+        </div>
+
+        <div class="formas" role="radiogroup" aria-label="Forma de pagamento">
+          <input type="radio" name="forma" id="f-pix" value="pix" />
+          <label for="f-pix"><span>⚡</span> Pix</label>
+
+          <input type="radio" name="forma" id="f-credito" value="credito" />
+          <label for="f-credito"><span>💳</span> Cartão de crédito</label>
+
+          <input type="radio" name="forma" id="f-debito" value="debito" />
+          <label for="f-debito"><span>💳</span> Cartão de débito</label>
+
+          <input type="radio" name="forma" id="f-boleto" value="boleto" />
+          <label for="f-boleto"><span>🧾</span> Boleto</label>
+
+          <input type="radio" name="forma" id="f-retirada" value="retirada" />
+          <label for="f-retirada" class="forma-larga"><span>💵</span> Pagar na retirada</label>
+        </div>
+
+        <div class="mt-3">
+          <!-- Pix -->
+          <div id="d-pix" class="detalhe" hidden>
+            <p class="small mb-2">Copie o código e pague no app do seu banco:</p>
+            <div class="input-group">
+              <input id="pix-codigo" class="form-control" readonly value="00020126580014br.gov.bcb.pix0136demo-locadora-0000-0000-00005204000053039865802BR5909LOCADORA6009FORTALEZA62070503***6304ABCD" />
+              <button type="button" id="pix-copiar" class="btn btn-outline-light">Copiar</button>
+            </div>
+            <p class="text-muted small mt-2 mb-0">Código de demonstração.</p>
+          </div>
+
+          <!-- Cartão (crédito e débito) -->
+          <div id="d-cartao" class="detalhe" hidden>
+            <div class="row g-3">
+              <div class="col-12">
+                <label for="c-numero" class="form-label">Número do cartão</label>
+                <input id="c-numero" class="form-control" inputmode="numeric" autocomplete="cc-number" placeholder="0000 0000 0000 0000" maxlength="23" />
+              </div>
+              <div class="col-12">
+                <label for="c-nome" class="form-label">Nome impresso no cartão</label>
+                <input id="c-nome" class="form-control text-uppercase" autocomplete="cc-name" maxlength="60" />
+              </div>
+              <div class="col-6">
+                <label for="c-validade" class="form-label">Validade</label>
+                <input id="c-validade" class="form-control" inputmode="numeric" autocomplete="cc-exp" placeholder="MM/AA" maxlength="5" />
+              </div>
+              <div class="col-6">
+                <label for="c-cvv" class="form-label">CVV</label>
+                <input id="c-cvv" type="password" class="form-control" inputmode="numeric" autocomplete="cc-csc" maxlength="4" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Boleto -->
+          <div id="d-boleto" class="detalhe" hidden>
+            <p class="small mb-0">O boleto é gerado após a confirmação e vence em 2 dias úteis. O veículo fica reservado até o pagamento.</p>
+          </div>
+
+          <!-- Pagar na retirada -->
+          <div id="d-retirada" class="detalhe" hidden>
+            <p class="small mb-0">Você paga na loja, no momento da retirada (dinheiro, Pix ou cartão). Leve um documento com foto.</p>
+          </div>
+        </div>
+
+        <div id="pg-sucesso" class="alert alert-success d-none mt-3" role="status"></div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <button type="button" id="pg-cancelar" class="btn btn-outline-light rounded-pill">Cancelar</button>
+          <button type="submit" id="pg-confirmar" class="btn btn-dourado px-4" disabled>Confirmar</button>
+        </div>
+      </form>
+    </dialog>
 
     <script src="/static/catalogo.js"></script>
   </body>
