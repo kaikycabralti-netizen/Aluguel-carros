@@ -344,3 +344,49 @@ body {
   background: rgba(255, 255, 255, 0.04);
   border: 1px dashed rgba(255, 255, 255, 0.15);
 }
+
+/* Lista de regras da senha (fica verde conforme a pessoa digita) */
+.regras-senha {
+  list-style: none;
+  padding: 0;
+  margin: 0.6rem 0 0;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.regras-senha li::before {
+  content: "○ ";
+}
+
+.regras-senha li.ok {
+  color: #5fd38d;
+}
+
+.regras-senha li.ok::before {
+  content: "✔ ";
+}
+
+/* Cor padrão das regras (quando ainda não foram cumpridas) */
+#regras-senha li {
+  color: #888; /* Cinza ou vermelho, como preferir */
+  transition: color 0.3s ease; /* Efeito suave na troca de cor */
+  list-style-type: none; /* Opcional: remove as bolinhas da lista */
+}
+
+/* Cor quando a regra for cumprida (classe adicionada pelo JS) */
+#regras-senha li.ok {
+  color: #28a745; /* Verde */
+  font-weight: bold;
+}
+
+/* Opcional: adicionar um ícone de check (✔) antes do texto quando cumprido */
+#regras-senha li.ok::before {
+  content: "✔ ";
+}
+#regras-senha li:not(.ok)::before {
+  content: "✖ ";
+  color: #dc3545; /* Vermelho pro X */
+}
+#regras-senha li.ok {
+  color: #28a745; /* Verde */
+}

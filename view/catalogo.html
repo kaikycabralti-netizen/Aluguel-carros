@@ -21,9 +21,13 @@
     <header class="topo">
       <div class="container d-flex align-items-center justify-content-between py-3">
         <span class="marca">Locadora de Veículos</span>
-        <button type="button" class="btn btn-outline-light btn-sm rounded-pill px-3">
-          Sair
-        </button>
+        <button
+        type="button"
+        class="btn btn-outline-light btn-sm rounded-pill px-3"
+        onclick="fetch('/api/logout', { method: 'POST', credentials: 'include' }).finally(() => { window.location.href = '/'; })"
+>
+        Sair
+    </button>
       </div>
     </header>
 

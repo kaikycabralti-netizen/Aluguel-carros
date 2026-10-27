@@ -91,6 +91,41 @@ formLogin.addEventListener('submit', async (event) => {
   }
 });
 
+// ---------------- Regras de e-mail e senha ----------------
+const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+const REGRAS_SENHA = {
+  tamanho: (s) => s.length >= 8,
+  maiuscula: (s) => /[A-Z]/.test(s),
+  numero: (s) => /[0-9]/.test(s),
+  especial: (s) => /[^A-Za-z0-9]/.test(s),
+};
+
+const TEXTO_REGRA = {
+  tamanho: 'no mínimo 8 caracteres',
+  maiuscula: 'uma letra maiúscula',
+  numero: 'um número',
+  especial: 'um caractere especial',
+};
+
+// Devolve o texto das regras que a senha ainda não cumpre
+function senhaFaltando(senha) {
+  return Object.keys(REGRAS_SENHA)
+    .filter((regra) => !REGRAS_SENHA[regra](senha))
+    .map((regra) => TEXTO_REGRA[regra]);
+}
+
+// Marca na tela (✔) as regras que a senha digitada já cumpre
+function atualizarRegras() {
+  const senha = formRegistro.senha.value;
+  document.querySelectorAll('#regras-senha li').forEach((li) => {
+    li.classList.toggle('ok', REGRAS_SENHA[li.dataset.regra](senha));
+  });
+}
+formRegistro.senha.addEventListener('input', atualizarRegras);
+
+
+
 // --------------------------- REGISTRO --------------------------
 formRegistro.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -106,8 +141,13 @@ formRegistro.addEventListener('submit', async (event) => {
     mostrarErro('Preencha todos os campos.');
     return;
   }
-  if (senha.length < 8) {
-    mostrarErro('A senha deve ter no mínimo 8 caracteres.');
+  if (!REGEX_EMAIL.test(email)) {
+    mostrarErro('Digite um e-mail válido (ex: nome@dominio.com).');
+    return;
+  }
+  const faltando = senhaFaltando(senha);
+  if (faltando.length > 0) {
+    mostrarErro('A senha precisa ter: ' + faltando.join(', ') + '.');
     return;
   }
   if (senha !== confirmar) {
@@ -146,5 +186,6 @@ formRegistro.addEventListener('submit', async (event) => {
     btnRegistrar.textContent = 'Criar conta';
     formRegistro.senha.value = '';
     formRegistro.confirmar.value = '';
+    atualizarRegras();
   }
 });

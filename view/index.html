@@ -105,9 +105,13 @@
                 minlength="8"
                 required
               />
-              <div class="form-text text-muted">Mínimo de 8 caracteres.</div>
+              <ul id="regras-senha">
+                <li data-regra="tamanho">No mínimo 8 caracteres</li>
+                <li data-regra="maiuscula">Uma letra maiúscula</li>
+                <li data-regra="numero">Um número</li>
+                <li data-regra="especial">Um caractere especial</li>
+              </ul>
             </div>
-
             <div class="mb-4">
               <label for="reg-confirmar" class="form-label">Confirmar senha</label>
               <input
