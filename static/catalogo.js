@@ -1,10 +1,15 @@
-// ---------------------------------------------------------------
-// DADOS DE EXEMPLO (mock). Depois, troque por um fetch('/api/veiculos').
-// Se tiver foto, preencha "imagem" com a URL; vazio mostra o emoji.
-// ---------------------------------------------------------------
+// ===============================================================
+// catalogo.js  ->  tela do catálogo (cliente e admin)
+// - carrega os veículos do back-end (/api/veiculos)
+// - filtros e ordenação
+// - tela de pagamento com datas, total e envio do aluguel
+// - mostra o botão "Painel admin" só para administradores
+// ===============================================================
+
+// Lista de veículos (vem da API, é preenchida em carregarVeiculos)
 let veiculos = [];
 
-
+// ---- elementos da página ----
 const lista = document.getElementById('lista');
 const vazio = document.getElementById('vazio');
 const contador = document.getElementById('contador');
@@ -13,10 +18,11 @@ const filtroMarca = document.getElementById('filtro-marca');
 const ordenar = document.getElementById('ordenar');
 const soDisponiveis = document.getElementById('so-disponiveis');
 
+// Formata números como dinheiro: 250 -> "R$ 250,00"
 const moeda = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
 // Cria elementos com textContent (e não innerHTML), assim os dados
-// que vierem da API não conseguem injetar HTML na página.
+// que vierem da API não conseguem injetar HTML na página (proteção contra XSS).
 function el(tag, classe, texto) {
   const e = document.createElement(tag);
   if (classe) e.className = classe;
@@ -24,13 +30,14 @@ function el(tag, classe, texto) {
   return e;
 }
 
+// ---------------------------- CARD DO VEÍCULO ----------------------------
 function criarCard(v) {
   const disponivel = v.situacao === 'disponivel';
 
   const coluna = el('div', 'col-12 col-md-6 col-lg-4 col-xl-3');
   const card = el('article', 'cartao-black carro-card');
 
-  // Imagem + selo de situação
+  // Imagem + selo de situação (Disponível / Alugado)
   const img = el('div', 'carro-img');
   if (v.imagem) {
     const foto = document.createElement('img');
@@ -38,7 +45,7 @@ function criarCard(v) {
     foto.alt = `${v.marca} ${v.modelo}`;
     img.appendChild(foto);
   } else {
-    img.textContent = '🚗';
+    img.textContent = '🚗'; // sem foto: mostra o emoji
   }
   img.appendChild(
     el(
@@ -48,18 +55,16 @@ function criarCard(v) {
     )
   );
 
-  // Corpo
+  // Corpo do card: marca, modelo e placa
   const corpo = el('div', 'carro-corpo');
   corpo.appendChild(el('div', 'carro-marca', `${v.marca} · ${v.ano}`));
   corpo.appendChild(el('h2', 'carro-modelo', v.modelo));
 
   const tags = el('div', 'carro-tags');
-    [`Placa ${v.placa}`].forEach((t) =>
-      tags.appendChild(el('span', 'carro-tag', t))
-    );
+  [`Placa ${v.placa}`].forEach((t) => tags.appendChild(el('span', 'carro-tag', t)));
   corpo.appendChild(tags);
 
-  // Rodapé: preço + botão
+  // Rodapé: preço da diária + botão Alugar
   const rodape = el('div', 'carro-rodape');
   const preco = el('div', 'carro-preco');
   preco.appendChild(el('strong', '', moeda.format(v.preco)));
@@ -71,7 +76,7 @@ function criarCard(v) {
     disponivel ? 'Alugar' : 'Indisponível'
   );
   botao.type = 'button';
-  botao.disabled = !disponivel;
+  botao.disabled = !disponivel; // veículo alugado não pode ser clicado
   if (disponivel) botao.addEventListener('click', () => alugar(v));
 
   rodape.append(preco, botao);
@@ -82,19 +87,37 @@ function criarCard(v) {
   return coluna;
 }
 
-// Aqui entra depois a tela/modal de aluguel
-
 // ---------------------------- PAGAMENTO ----------------------------
+// Elementos da tela de pagamento (o <dialog> do catalogo.html)
 const modalPg = document.getElementById('modal-pagamento');
 const formPg = document.getElementById('form-pagamento');
 const pgConfirmar = document.getElementById('pg-confirmar');
 const pgSucesso = document.getElementById('pg-sucesso');
 
+// NOVO: datas, total e erro
+const campoPgInicio = document.getElementById('pg-inicio');
+const campoPgFim = document.getElementById('pg-fim');
+const pgTotal = document.getElementById('pg-total');
+const pgErro = document.getElementById('pg-erro');
+
+// Data de hoje no formato do <input type="date"> (AAAA-MM-DD, no fuso do usuário)
+function hojeISO() {
+  return new Date().toLocaleDateString('sv-SE');
+}
+
+// Quantidade de dias entre duas datas (fim - início)
+function diasEntre(inicioISO, fimISO) {
+  const ms = new Date(fimISO + 'T00:00:00') - new Date(inicioISO + 'T00:00:00');
+  return Math.round(ms / 86400000); // 86400000 ms = 1 dia
+}
+
+// Campos do cartão
 const campoNumero = document.getElementById('c-numero');
 const campoNomeCartao = document.getElementById('c-nome');
 const campoValidade = document.getElementById('c-validade');
 const campoCvv = document.getElementById('c-cvv');
 
+// Nome bonito de cada forma (usado na mensagem de sucesso)
 const NOME_FORMA = {
   pix: 'Pix',
   credito: 'Cartão de crédito',
@@ -112,27 +135,34 @@ const PAINEL_DA_FORMA = {
   retirada: 'd-retirada',
 };
 
-let veiculoPagamento = null;
+let veiculoPagamento = null; // veículo que está sendo alugado agora
 
-// Chamada pelo botão "Alugar" de cada card
+// Chamada pelo botão "Alugar" de cada card: abre a tela de pagamento
 function alugar(veiculo) {
   veiculoPagamento = veiculo;
-  formPg.reset();
-  mostrarPainel('');
-  pgSucesso.classList.add('d-none');
+  formPg.reset();                      // limpa o formulário
+  mostrarPainel('');                   // esconde todos os detalhes
+  pgSucesso.classList.add('d-none');   // esconde mensagens antigas
+  pgErro.classList.add('d-none');
+  campoPgInicio.min = hojeISO();       // não deixa escolher data no passado
+  campoPgFim.min = hojeISO();
+  atualizarTotal();
   document.getElementById('pg-resumo').textContent =
     `${veiculo.marca} ${veiculo.modelo} · ${moeda.format(veiculo.preco)} por dia`;
   atualizarBotao();
   modalPg.showModal();
 }
 
+// Mostra só o painel da forma escolhida (Pix, cartão, boleto...)
 function mostrarPainel(forma) {
   document.querySelectorAll('#modal-pagamento .detalhe').forEach((p) => {
     p.hidden = p.id !== PAINEL_DA_FORMA[forma];
   });
 }
 
-// ---- validação do cartão (só no navegador; nada disso é enviado ao servidor) ----
+// ---- validação do cartão (só no navegador; nada disso vai ao servidor) ----
+
+// Algoritmo de Luhn: confere se o número do cartão é válido
 function luhn(numero) {
   let soma = 0;
   let dobrar = false;
@@ -148,6 +178,7 @@ function luhn(numero) {
   return soma % 10 === 0;
 }
 
+// Validade no formato MM/AA e ainda não vencida
 function validadeOk(texto) {
   const m = /^(\d{2})\/(\d{2})$/.exec(texto);
   if (!m) return false;
@@ -169,7 +200,32 @@ function cartaoOk() {
   );
 }
 
+// NOVO: retirada e devolução preenchidas, retirada de hoje em diante
+// e devolução depois da retirada
+function periodoOk() {
+  if (!campoPgInicio.value || !campoPgFim.value) return false;
+  if (campoPgInicio.value < hojeISO()) return false;
+  return diasEntre(campoPgInicio.value, campoPgFim.value) > 0;
+}
+
+// NOVO: prévia do total. O valor OFICIAL é calculado no servidor.
+function atualizarTotal() {
+  if (!campoPgInicio.value || !campoPgFim.value) {
+    pgTotal.textContent = 'Escolha as datas para ver o total.';
+    return;
+  }
+  const dias = diasEntre(campoPgInicio.value, campoPgFim.value);
+  if (dias <= 0) {
+    pgTotal.textContent = 'A devolução precisa ser depois da retirada.';
+    return;
+  }
+  const total = dias * veiculoPagamento.preco;
+  pgTotal.textContent = `${dias} ${dias === 1 ? 'dia' : 'dias'} · total de ${moeda.format(total)}`;
+}
+
+// O botão Confirmar só habilita se o período e a forma de pagamento estiverem ok
 function formaValida() {
+  if (!periodoOk()) return false;
   const forma = formPg.forma.value; // '' se nenhuma foi escolhida
   if (!forma) return false;
   if (forma === 'credito' || forma === 'debito') return cartaoOk();
@@ -180,26 +236,34 @@ function atualizarBotao() {
   pgConfirmar.disabled = !formaValida();
 }
 
-// ---- máscaras dos campos ----
+// ---- máscaras dos campos do cartão ----
 campoNumero.addEventListener('input', () => {
   const n = campoNumero.value.replace(/\D/g, '').slice(0, 19);
-  campoNumero.value = n.replace(/(\d{4})(?=\d)/g, '$1 ');
+  campoNumero.value = n.replace(/(\d{4})(?=\d)/g, '$1 '); // 0000 0000 0000 0000
 });
 campoValidade.addEventListener('input', () => {
   const n = campoValidade.value.replace(/\D/g, '').slice(0, 4);
-  campoValidade.value = n.length > 2 ? `${n.slice(0, 2)}/${n.slice(2)}` : n;
+  campoValidade.value = n.length > 2 ? `${n.slice(0, 2)}/${n.slice(2)}` : n; // MM/AA
 });
 campoCvv.addEventListener('input', () => {
   campoCvv.value = campoCvv.value.replace(/\D/g, '').slice(0, 4);
 });
 
-// ---- eventos ----
+// ---- eventos da tela de pagamento ----
 formPg.addEventListener('change', (event) => {
   if (event.target.name === 'forma') mostrarPainel(event.target.value);
   atualizarBotao();
 });
 formPg.addEventListener('input', atualizarBotao);
 
+// NOVO: ao mudar as datas, atualiza o total (e a data mínima da devolução)
+campoPgInicio.addEventListener('input', () => {
+  campoPgFim.min = campoPgInicio.value || hojeISO();
+  atualizarTotal();
+});
+campoPgFim.addEventListener('input', atualizarTotal);
+
+// Botão "Copiar" do código Pix
 document.getElementById('pix-copiar').addEventListener('click', async (event) => {
   const botao = event.currentTarget;
   try {
@@ -211,6 +275,7 @@ document.getElementById('pix-copiar').addEventListener('click', async (event) =>
   setTimeout(() => (botao.textContent = 'Copiar'), 1500);
 });
 
+// Fechar a tela de pagamento
 document.getElementById('pg-fechar').addEventListener('click', () => modalPg.close());
 document.getElementById('pg-cancelar').addEventListener('click', () => modalPg.close());
 modalPg.addEventListener('click', (event) => {
@@ -224,26 +289,71 @@ formPg.addEventListener('submit', (event) => {
   confirmarAluguel(veiculoPagamento, formPg.forma.value);
 });
 
-function confirmarAluguel(veiculo, forma) {
-  // Aqui entra depois a chamada ao back, por exemplo:
-  // fetch('/api/alugueis', { method: 'POST', credentials: 'include',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ veiculo_id: veiculo.id, forma_pagamento: forma }) });
-  pgSucesso.textContent = `Pedido registrado: ${veiculo.marca} ${veiculo.modelo} · ${NOME_FORMA[forma]}.`;
-  pgSucesso.classList.remove('d-none');
-  pgConfirmar.disabled = true;
-  setTimeout(() => modalPg.close(), 2000);
+// NOVO: envia o aluguel de verdade para o servidor (POST /api/alugueis)
+async function confirmarAluguel(veiculo, forma) {
+  pgErro.classList.add('d-none');
+  pgConfirmar.disabled = true; // evita clicar duas vezes
+
+  try {
+    // Só vão: veículo, datas e o NOME da forma de pagamento.
+    // O preço NÃO é enviado: o servidor calcula.
+    const resposta = await fetch('/api/alugueis', {
+      method: 'POST',
+      credentials: 'include', // envia o cookie de sessão (login)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        veiculo_id: veiculo.id,
+        data_inicio: campoPgInicio.value,
+        data_fim: campoPgFim.value,
+        forma_pagamento: forma,
+      }),
+    });
+
+    if (resposta.status === 401) {
+      window.location.href = '/'; // sessão expirou: volta pro login
+      return;
+    }
+
+    const dados = await resposta.json().catch(() => ({}));
+    if (!resposta.ok) {
+      // Erros de validação do FastAPI vêm numa lista; os demais, em texto
+      const detalhe = Array.isArray(dados.detail)
+        ? dados.detail.map((d) => d.msg.replace(/^Value error, /, '')).join(' · ')
+        : dados.detail;
+      pgErro.textContent = detalhe || 'Não foi possível registrar o aluguel.';
+      pgErro.classList.remove('d-none');
+      pgConfirmar.disabled = false;
+      return;
+    }
+
+    // Sucesso: mostra o resumo com os valores que o SERVIDOR calculou
+    pgSucesso.textContent =
+      `Aluguel registrado: ${veiculo.marca} ${veiculo.modelo} · ${dados.dias} ` +
+      `${dados.dias === 1 ? 'dia' : 'dias'} · ${moeda.format(dados.valor_total)} · ${NOME_FORMA[forma]}.`;
+    pgSucesso.classList.remove('d-none');
+    setTimeout(() => {
+      modalPg.close();
+      carregarVeiculos(); // atualiza o catálogo: o carro passa a aparecer como alugado
+    }, 2000);
+  } catch {
+    pgErro.textContent = 'Não foi possível conectar ao servidor.';
+    pgErro.classList.remove('d-none');
+    pgConfirmar.disabled = false;
+  }
 }
 
+// ---------------------------- FILTROS E LISTA ----------------------------
+
+// Monta o filtro de marcas a partir dos veículos carregados
 function preencherMarcas() {
+  const marcaAtual = filtroMarca.value;
   const marcas = [...new Set(veiculos.map((v) => v.marca))].sort();
-  marcas.forEach((m) => {
-    const opt = el('option', '', m);
-    opt.value = m;
-    filtroMarca.appendChild(opt);
-  });
+  filtroMarca.replaceChildren(new Option('Todas', ''));   // zera antes, pra não duplicar marcas
+  marcas.forEach((m) => filtroMarca.appendChild(new Option(m, m)));
+  filtroMarca.value = marcas.includes(marcaAtual) ? marcaAtual : '';
 }
 
+// Busca os veículos no back-end
 async function carregarVeiculos() {
   const resposta = await fetch('/api/veiculos', { credentials: 'include' });
   if (!resposta.ok) {
@@ -263,6 +373,7 @@ async function carregarVeiculos() {
     ano: v.ano,
     placa: v.placa,
     preco: v.preco_diaria ?? 0,
+    // qualquer status que comece com "dispon" é disponível; o resto aparece como alugado
     situacao: String(v.status).toLowerCase().startsWith('dispon') ? 'disponivel' : 'alugado',
     imagem: '',
   }));
@@ -271,6 +382,7 @@ async function carregarVeiculos() {
   render();
 }
 
+// Aplica busca, filtros e ordenação e desenha os cards
 function render() {
   const termo = campoBusca.value.trim().toLowerCase();
 
@@ -291,8 +403,24 @@ function render() {
   vazio.classList.toggle('d-none', resultado.length > 0);
 }
 
+// Qualquer mudança nos filtros redesenha a lista
 [campoBusca, filtroMarca, ordenar, soDisponiveis].forEach((campo) =>
   campo.addEventListener('input', render)
 );
 
-carregarVeiculos();
+carregarVeiculos(); // carrega ao abrir a página
+
+// ---------------------------- BOTÃO ADMIN ----------------------------
+// NOVO: mostra o botão "Painel admin" só para administradores.
+// (Quem realmente barra o acesso é o servidor; isto é só para esconder o botão.)
+async function mostrarLinkAdmin() {
+  try {
+    const resposta = await fetch('/api/me', { credentials: 'include' });
+    if (!resposta.ok) return;
+    const eu = await resposta.json();
+    if (eu.perfil === 'admin') document.getElementById('link-admin').classList.remove('d-none');
+  } catch {
+    /* sem conexão: o botão simplesmente não aparece */
+  }
+}
+mostrarLinkAdmin();

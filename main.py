@@ -1,6 +1,6 @@
 import os
-from fastapi import FastAPI
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -8,6 +8,8 @@ from db import criar_tabelas
 from auth_routes import auth_router
 from order_routes import order_router
 from veiculos_routes import veiculos_router
+from admin_routes import admin_router
+from seguranca import obter_usuario    
 # para rodar o código, colocar no terminal: uvicorn main:app --reload
 
 app = FastAPI()
@@ -25,6 +27,7 @@ criar_tabelas()
 # Rotas da API
 app.include_router(auth_router)
 app.include_router(order_router)
+app.include_router(admin_router)   
 
 # Arquivos do front-end (as pastas precisam existir ao lado do main.py)
 app.mount("/static", StaticFiles(directory="static"), name="static")

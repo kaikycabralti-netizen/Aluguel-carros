@@ -390,3 +390,86 @@ body {
 #regras-senha li.ok {
   color: #28a745; /* Verde */
 }
+
+/* =================================================================
+   PAINEL ADMIN, TABELAS E MODAIS
+   ================================================================= */
+
+/* Tabelas do Bootstrap com o visual escuro do cartão */
+.cartao-black .table {
+  --bs-table-bg: transparent;
+  --bs-table-color: #e8e8e8;
+  --bs-table-border-color: rgba(255, 255, 255, 0.1);
+  --bs-table-hover-bg: rgba(255, 255, 255, 0.04);
+  --bs-table-hover-color: #fff;
+  margin-bottom: 0;
+}
+
+/* Cabeçalho das tabelas: pequeno, em maiúsculas e apagado */
+.cartao-black .table thead th {
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+
+/* Números dos 4 cartões do resumo no topo do painel */
+.resumo-numero {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 1.8rem;
+  color: #f5d76e;
+  line-height: 1.1;
+}
+
+/* Etiqueta (selo) de status dentro das tabelas */
+.badge-status {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  color: #fff;
+  white-space: nowrap;
+}
+
+/* Veículo em manutenção (laranja) */
+.situacao-manutencao {
+  background: rgba(255, 152, 0, 0.85);
+  color: #1a1a1a;
+}
+
+/* Aluguel que ainda vai começar (azul) */
+.situacao-futuro {
+  background: rgba(70, 130, 220, 0.85);
+  color: #fff;
+}
+
+/* Abas Veículos | Aluguéis */
+.nav-pills .nav-link {
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  padding: 0.5rem 1.4rem;
+}
+
+.nav-pills .nav-link.active {
+  background: linear-gradient(135deg, #f5d76e, #b8892b);
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+/* Modais do Bootstrap com o visual de cartão, mais opacos para facilitar a leitura */
+.modal-content.cartao-black {
+  background: rgba(22, 22, 25, 0.96);
+}
+
+/* Botão X de fechar branco (o padrão é preto e some no fundo escuro) */
+.modal-content.cartao-black .btn-close {
+  filter: invert(1);
+}
+
+/* Calendário dos campos de data em tema escuro */
+.cartao-black input[type="date"] {
+  color-scheme: dark;
+}

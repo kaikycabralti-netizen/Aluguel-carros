@@ -14,20 +14,35 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
-    <link href="/style/estilo.css" rel="stylesheet" />
+    <!-- (a linha do estilo.css estava duplicada; deixei só uma) -->
     <link href="/style/estilo.css" rel="stylesheet" />
   </head>
   <body>
     <header class="topo">
       <div class="container d-flex align-items-center justify-content-between py-3">
         <span class="marca">Locadora de Veículos</span>
-        <button
-        type="button"
-        class="btn btn-outline-light btn-sm rounded-pill px-3"
-        onclick="fetch('/api/logout', { method: 'POST', credentials: 'include' }).finally(() => { window.location.href = '/'; })"
->
-        Sair
-    </button>
+
+        <!-- NOVO: agrupa os botões do lado direito -->
+        <div class="d-flex align-items-center gap-2">
+          <!-- NOVO: começa escondido (d-none). O catalogo.js remove o d-none
+               se o usuário logado for admin. -->
+          <a
+            id="link-admin"
+            href="/admin.html"
+            class="btn btn-outline-warning btn-sm rounded-pill px-3 d-none"
+          >
+            Painel admin
+          </a>
+
+          <!-- Sair: avisa o servidor (/api/logout) e volta para o login -->
+          <button
+            type="button"
+            class="btn btn-outline-light btn-sm rounded-pill px-3"
+            onclick="fetch('/api/logout', { method: 'POST', credentials: 'include' }).finally(() => { window.location.href = '/'; })"
+          >
+            Sair
+          </button>
+        </div>
       </div>
     </header>
 
@@ -83,8 +98,8 @@
         Nenhum veículo encontrado com esses filtros.
       </div>
     </main>
-    
-       <!-- Tela de pagamento (abre ao clicar em "Alugar") -->
+
+    <!-- Tela de pagamento (abre ao clicar em "Alugar") -->
     <dialog id="modal-pagamento" class="cartao-black pagamento">
       <form id="form-pagamento" novalidate>
         <div class="d-flex justify-content-between align-items-start mb-3">
@@ -94,6 +109,24 @@
           </div>
           <button type="button" id="pg-fechar" class="btn-close" aria-label="Fechar"></button>
         </div>
+
+        <!-- NOVO: período do aluguel (cliente escolhe retirada e devolução) -->
+        <div class="row g-3 mb-2">
+          <div class="col-6">
+            <label for="pg-inicio" class="form-label">Retirada</label>
+            <input type="date" id="pg-inicio" class="form-control" required />
+          </div>
+          <div class="col-6">
+            <label for="pg-fim" class="form-label">Devolução</label>
+            <input type="date" id="pg-fim" class="form-control" required />
+          </div>
+        </div>
+
+        <!-- NOVO: prévia "3 dias · total de R$ 750,00" (o servidor recalcula o valor) -->
+        <p id="pg-total" class="text-muted small mb-3"></p>
+
+        <!-- NOVO: erros que o servidor devolver (ex.: veículo indisponível) -->
+        <div id="pg-erro" class="alert alert-danger d-none" role="alert"></div>
 
         <div class="formas" role="radiogroup" aria-label="Forma de pagamento">
           <input type="radio" name="forma" id="f-pix" value="pix" />
