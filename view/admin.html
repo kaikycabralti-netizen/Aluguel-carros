@@ -171,6 +171,15 @@
                   <input id="v-preco" type="number" step="0.01" min="0.01" class="form-control" required />
                 </div>
                 <div class="col-12">
+                  <label for="v-imagem" class="form-label">Foto do veículo (JPG, PNG ou WebP, até 2 MB)</label>
+                  <input id="v-imagem" type="file" accept="image/jpeg,image/png,image/webp" class="form-control" />
+                  <!-- foto atual (aparece só na edição, se o veículo já tiver foto) -->
+                  <div id="v-imagem-atual" class="d-flex align-items-center gap-3 mt-2 d-none">
+                    <img id="v-imagem-previa" alt="Foto atual" class="miniatura-foto" />
+                    <button type="button" id="v-imagem-remover" class="btn btn-sm btn-outline-danger">Remover foto</button>
+                  </div>
+                </div>
+                <div class="col-12">
                   <label for="v-status" class="form-label">Status</label>
                   <!-- os valores (value) são os que o banco guarda: minúsculo e sem acento -->
                   <select id="v-status" class="form-select">

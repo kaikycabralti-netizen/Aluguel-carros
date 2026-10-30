@@ -2,6 +2,8 @@ import sqlite3
 import bcrypt
 
 #cadastro de usuarios
+#comando cadastrar adm
+# python -c "import sqlite3,hashlib; e='email-para-vira-adm'; c=sqlite3.connect('banco_sistema.db'); c.execute('UPDATE usuarios SET perfil=? WHERE email_hash=?', ('admin', hashlib.sha256(e.lower().strip().encode()).hexdigest())); c.commit(); print(c.total_changes, 'conta promovida')" 
 def cadastrar_usuario(nome, cpf, email, senha):
     conexao = sqlite3.connect('banco_sistema.db')
     cursor = conexao.cursor()

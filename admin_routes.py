@@ -4,12 +4,14 @@
 # Todas as rotas daqui exigem perfil 'admin'.
 # Cliente comum recebe 403 (proibido), mesmo se descobrir a URL.
 # ============================================================
+import os
 import re
 import sqlite3
+import uuid
 from datetime import date
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 
 from db import conectar
@@ -22,6 +24,31 @@ admin_router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depe
 
 # Placa antiga (ABC1234) ou Mercosul (ABC1D23)
 PADRAO_PLACA = re.compile(r"^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$")
+
+
+# ---------------------- FOTOS DOS VEÍCULOS ----------------------
+PASTA_UPLOADS = os.path.join("static", "uploads")   # fica dentro de /static, então já é servida
+LIMITE_IMAGEM = 2 * 1024 * 1024                     # 2 MB
+
+
+def detectar_extensao(dados: bytes):
+    """Descobre o tipo pelo CONTEÚDO do arquivo (os primeiros bytes), não pelo nome.
+    Assim ninguém consegue enviar um .exe ou .html renomeado para .jpg."""
+    if dados.startswith(b"\xff\xd8\xff"):
+        return "jpg"
+    if dados.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "png"
+    if dados[:4] == b"RIFF" and dados[8:12] == b"WEBP":
+        return "webp"
+    return None
+
+
+def apagar_arquivo_imagem(caminho):
+    """Apaga a foto do disco. Só mexe em arquivos dentro da pasta de uploads."""
+    if caminho and caminho.startswith("/static/uploads/"):
+        arquivo = os.path.join(PASTA_UPLOADS, os.path.basename(caminho))
+        if os.path.isfile(arquivo):
+            os.remove(arquivo)
 
 
 class VeiculoIn(BaseModel):
@@ -50,7 +77,7 @@ async def listar_veiculos():
     conexao = conectar()
     try:
         linhas = conexao.execute(
-            "SELECT id, marca, modelo, ano, placa, status, preco_diaria "
+            "SELECT id, marca, modelo, ano, placa, status, preco_diaria, imagem "
             "FROM veiculos ORDER BY marca, modelo"
         ).fetchall()
     finally:
@@ -115,13 +142,67 @@ async def remover_veiculo(veiculo_id: int):
                 status_code=409,
                 detail="Veículo com aluguéis registrados não pode ser removido. Marque como manutenção.",
             )
+        antiga = conexao.execute("SELECT imagem FROM veiculos WHERE id = ?", (veiculo_id,)).fetchone()
         cursor = conexao.execute("DELETE FROM veiculos WHERE id = ?", (veiculo_id,))
         conexao.commit()
         if cursor.rowcount == 0:
             raise HTTPException(status_code=404, detail="Veículo não encontrado")
+        if antiga:
+            apagar_arquivo_imagem(antiga["imagem"])   # não deixa foto órfã no disco
     finally:
         conexao.close()
     return {"mensagem": "Veículo removido"}
+
+
+@admin_router.post("/veiculos/{veiculo_id}/imagem")
+async def enviar_imagem(veiculo_id: int, request: Request):
+    """Recebe a foto como corpo da requisição (o front manda o arquivo direto)."""
+    # recusa cedo se o cabeçalho já avisa que é grande demais
+    if int(request.headers.get("content-length") or 0) > LIMITE_IMAGEM + 1024:
+        raise HTTPException(status_code=413, detail="Imagem muito grande (máximo 2 MB)")
+    dados = await request.body()
+    if not dados:
+        raise HTTPException(status_code=422, detail="Nenhuma imagem enviada")
+    if len(dados) > LIMITE_IMAGEM:
+        raise HTTPException(status_code=413, detail="Imagem muito grande (máximo 2 MB)")
+    extensao = detectar_extensao(dados)
+    if extensao is None:
+        raise HTTPException(status_code=415, detail="Formato inválido. Use JPG, PNG ou WebP")
+
+    conexao = conectar()
+    try:
+        veiculo = conexao.execute("SELECT imagem FROM veiculos WHERE id = ?", (veiculo_id,)).fetchone()
+        if veiculo is None:
+            raise HTTPException(status_code=404, detail="Veículo não encontrado")
+
+        # Nome aleatório: ninguém controla o nome do arquivo no servidor
+        os.makedirs(PASTA_UPLOADS, exist_ok=True)
+        nome = f"{uuid.uuid4().hex}.{extensao}"
+        with open(os.path.join(PASTA_UPLOADS, nome), "wb") as arquivo:
+            arquivo.write(dados)
+
+        caminho = f"/static/uploads/{nome}"
+        conexao.execute("UPDATE veiculos SET imagem = ? WHERE id = ?", (caminho, veiculo_id))
+        conexao.commit()
+        apagar_arquivo_imagem(veiculo["imagem"])   # troca a foto: apaga a antiga
+    finally:
+        conexao.close()
+    return {"imagem": caminho}
+
+
+@admin_router.delete("/veiculos/{veiculo_id}/imagem")
+async def remover_imagem(veiculo_id: int):
+    conexao = conectar()
+    try:
+        veiculo = conexao.execute("SELECT imagem FROM veiculos WHERE id = ?", (veiculo_id,)).fetchone()
+        if veiculo is None:
+            raise HTTPException(status_code=404, detail="Veículo não encontrado")
+        conexao.execute("UPDATE veiculos SET imagem = NULL WHERE id = ?", (veiculo_id,))
+        conexao.commit()
+        apagar_arquivo_imagem(veiculo["imagem"])
+    finally:
+        conexao.close()
+    return {"mensagem": "Foto removida"}
 
 
 # ------------------------------ ALUGUÉIS ------------------------------

@@ -51,12 +51,13 @@ function textoErro(dados) {
 // Função única para falar com o servidor.
 //   401 = sessão caiu           -> volta para o login
 //   403 = logado, mas não admin -> volta para o catálogo
-async function api(url, { method = 'GET', body } = {}) {
+async function api(url, { method = 'GET', body, arquivo } = {}) {
+  // "arquivo" = foto enviada direto no corpo; "body" = JSON
   const resposta = await fetch(url, {
     method,
     credentials: 'include', // envia o cookie de sessão (login)
-    headers: body ? { 'Content-Type': 'application/json' } : {},
-    body: body ? JSON.stringify(body) : undefined,
+    headers: arquivo ? { 'Content-Type': arquivo.type } : body ? { 'Content-Type': 'application/json' } : {},
+    body: arquivo ? arquivo : body ? JSON.stringify(body) : undefined,
   });
 
   if (resposta.status === 401) {
@@ -158,7 +159,16 @@ function atualizarResumo() {
 function renderVeiculos() {
   const linhas = veiculos.map((v) => {
     const tr = el('tr');
-    tr.appendChild(celula(`${v.marca} ${v.modelo}`));
+    // célula do veículo: miniatura da foto (se tiver) + nome
+    const tdNome = el('td');
+    if (v.imagem) {
+      const mini = el('img', 'miniatura-foto me-2');
+      mini.src = v.imagem;
+      mini.alt = `${v.marca} ${v.modelo}`;
+      tdNome.appendChild(mini);
+    }
+    tdNome.appendChild(document.createTextNode(`${v.marca} ${v.modelo}`));
+    tr.appendChild(tdNome);
     tr.appendChild(celula(v.ano));
     tr.appendChild(celula(v.placa));
     tr.appendChild(celula(moeda.format(v.preco_diaria)));
@@ -198,6 +208,11 @@ function abrirVeiculo(v = null) {
   document.getElementById('veiculo-titulo').textContent = v ? 'Editar veículo' : 'Novo veículo';
   document.getElementById('v-ano').max = new Date().getFullYear() + 1;
 
+  // foto atual (só na edição)
+  const blocoFoto = document.getElementById('v-imagem-atual');
+  blocoFoto.classList.toggle('d-none', !(v && v.imagem));
+  if (v && v.imagem) document.getElementById('v-imagem-previa').src = v.imagem;
+
   // Na edição, preenche os campos com os dados atuais
   if (v) {
     document.getElementById('v-marca').value = v.marca;
@@ -224,13 +239,31 @@ formVeiculo.addEventListener('submit', async (event) => {
     status: document.getElementById('v-status').value,
   };
 
+  // Confere a foto no navegador (o servidor confere de novo, é ele quem vale)
+  const foto = document.getElementById('v-imagem').files[0];
+  if (foto && !['image/jpeg', 'image/png', 'image/webp'].includes(foto.type)) {
+    erroVeiculo.textContent = 'Formato inválido. Use JPG, PNG ou WebP.';
+    erroVeiculo.classList.remove('d-none');
+    return;
+  }
+  if (foto && foto.size > 2 * 1024 * 1024) {
+    erroVeiculo.textContent = 'A foto passa de 2 MB.';
+    erroVeiculo.classList.remove('d-none');
+    return;
+  }
+
   btnSalvarVeiculo.disabled = true; // evita clicar duas vezes
   try {
+    let idVeiculo;
     if (veiculoEmEdicao) {
       await api(`/api/admin/veiculos/${veiculoEmEdicao.id}`, { method: 'PUT', body: corpo });
+      idVeiculo = veiculoEmEdicao.id;
     } else {
-      await api('/api/admin/veiculos', { method: 'POST', body: corpo });
+      const criado = await api('/api/admin/veiculos', { method: 'POST', body: corpo });
+      idVeiculo = criado.id;
     }
+    // envia a foto depois que o veículo existe (precisa do id)
+    if (foto) await api(`/api/admin/veiculos/${idVeiculo}/imagem`, { method: 'POST', arquivo: foto });
     modalVeiculo.hide();
     await carregarTudo(); // recarrega as tabelas com os dados novos
   } catch (e) {
@@ -239,6 +272,20 @@ formVeiculo.addEventListener('submit', async (event) => {
     erroVeiculo.classList.remove('d-none');
   } finally {
     btnSalvarVeiculo.disabled = false;
+  }
+});
+
+// Botão "Remover foto" dentro do modal de edição
+document.getElementById('v-imagem-remover').addEventListener('click', async () => {
+  if (!veiculoEmEdicao) return;
+  try {
+    await api(`/api/admin/veiculos/${veiculoEmEdicao.id}/imagem`, { method: 'DELETE' });
+    veiculoEmEdicao.imagem = null;
+    document.getElementById('v-imagem-atual').classList.add('d-none');
+    await carregarTudo();
+  } catch (e) {
+    erroVeiculo.textContent = e.message;
+    erroVeiculo.classList.remove('d-none');
   }
 });
 

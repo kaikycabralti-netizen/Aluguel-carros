@@ -1,0 +1,475 @@
+/* =================================================================
+   ESTILO GERAL (todas as telas)
+   ================================================================= */
+
+/* Fundo da página: precisa ter "algo" atrás do card pra transparência aparecer */
+body {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(212, 175, 55, 0.18), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(90, 90, 120, 0.25), transparent 45%),
+    #0b0b0d;
+  color: #e8e8e8;
+}
+
+/* Card estilo cartão black: translúcido, desfocado e arredondado */
+.cartao-black {
+  background: rgba(25, 25, 28, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  color: #e8e8e8;
+}
+
+.cartao-black .text-muted,
+.text-muted {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+/* Campos escuros, semitransparentes e arredondados */
+.cartao-black .form-control {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  color: #fff;
+  padding: 0.65rem 0.9rem;
+  
+}
+#busca::placeholder {
+  color: #f5f4f3;
+  opacity: 1; 
+}
+.color-text-box{
+  color: #fff;
+}
+
+.cartao-black .form-control:focus {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #d4af37;
+  box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.25);
+  color: #fff;
+}
+
+.cartao-black .form-select {
+  background-color: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  color: #fff;
+}
+
+.cartao-black .form-select:focus {
+  border-color: #d4af37;
+  box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.25);
+}
+
+.cartao-black .form-select option {
+  background: #1a1a1d;
+  color: #fff;
+}
+
+.form-check-input:checked {
+  background-color: #d4af37;
+  border-color: #d4af37;
+}
+
+/* Botão dourado */
+.btn-dourado {
+  background: linear-gradient(135deg, #f5d76e, #b8892b);
+  border: none;
+  border-radius: 12px;
+  color: #1a1a1a;
+  font-weight: 600;
+  padding: 0.7rem;
+  transition: transform 0.15s, filter 0.15s;
+}
+
+.btn-dourado:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  color: #1a1a1a;
+}
+
+.btn-dourado:disabled {
+  opacity: 0.7;
+}
+
+
+/* =================================================================
+   TELA DE LOGIN
+   ================================================================= */
+
+/* Chip dourado decorativo, tipo o do cartão */
+.chip {
+  width: 46px;
+  height: 34px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f5d76e, #b8892b);
+  margin-bottom: 1.2rem;
+}
+
+/* Link dourado (alternar entre login e registro) */
+.link-dourado {
+  color: #d4af37;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.link-dourado:hover {
+  color: #f5d76e;
+  text-decoration: underline;
+}
+
+
+/* =================================================================
+   BARRA DO TOPO
+   ================================================================= */
+
+.topo {
+  background: rgba(15, 15, 18, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.topo .marca {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-size: 0.95rem;
+  color: #d4af37;
+}
+
+
+/* =================================================================
+   CATÁLOGO DE VEÍCULOS
+   ================================================================= */
+
+.carro-card {
+  overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.carro-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(212, 175, 55, 0.5);
+}
+
+.carro-img {
+  position: relative;
+  height: 180px;
+  background: linear-gradient(135deg, #26262c, #0f0f12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4rem;
+}
+
+.carro-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.carro-situacao {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+}
+
+.situacao-disponivel {
+  background: rgba(40, 167, 69, 0.85);
+  color: #fff;
+}
+
+.situacao-alugado {
+  background: rgba(220, 53, 69, 0.85);
+  color: #fff;
+}
+
+.carro-corpo {
+  padding: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.carro-marca {
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.carro-modelo {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 1.15rem;
+  margin-bottom: 0.8rem;
+}
+
+.carro-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.carro-tag {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.carro-rodape {
+  margin-top: auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.carro-preco {
+  line-height: 1.1;
+}
+
+.carro-preco strong {
+  font-size: 1.4rem;
+  color: #f5d76e;
+}
+
+.carro-preco small {
+  display: block;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.75rem;
+}
+
+.carro-rodape .btn-dourado {
+  padding: 0.5rem 1.2rem;
+}
+
+.btn-indisponivel {
+  border-radius: 12px;
+  padding: 0.5rem 1.2rem;
+}
+/* =================================================================
+   TELA DE PAGAMENTO
+   ================================================================= */
+
+.pagamento {
+  width: min(520px, 92vw);
+  padding: 0;
+  margin: auto;
+  max-height: 92vh;
+  overflow-y: auto;
+}
+
+.pagamento.cartao-black {
+  background: rgba(22, 22, 25, 0.97);
+}
+
+.pagamento::backdrop {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+.pagamento form {
+  padding: 1.5rem;
+}
+
+.pagamento .btn-close {
+  filter: invert(1);
+}
+
+/* Opções de pagamento (os radios ficam escondidos; o label vira um cartãozinho) */
+.formas {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem;
+}
+
+.formas input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.formas label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.8rem 1rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.formas label:hover {
+  border-color: rgba(212, 175, 55, 0.6);
+}
+
+.formas input:checked + label {
+  border-color: #d4af37;
+  background: rgba(212, 175, 55, 0.14);
+  box-shadow: 0 0 0 0.15rem rgba(212, 175, 55, 0.2);
+}
+
+.formas input:focus-visible + label {
+  outline: 2px solid #f5d76e;
+}
+
+.formas .forma-larga {
+  grid-column: 1 / -1;
+}
+
+/* Caixa com os detalhes da forma escolhida */
+.detalhe {
+  padding: 1rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+}
+
+/* Lista de regras da senha (fica verde conforme a pessoa digita) */
+.regras-senha {
+  list-style: none;
+  padding: 0;
+  margin: 0.6rem 0 0;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.regras-senha li::before {
+  content: "○ ";
+}
+
+.regras-senha li.ok {
+  color: #5fd38d;
+}
+
+.regras-senha li.ok::before {
+  content: "✔ ";
+}
+
+/* Cor padrão das regras (quando ainda não foram cumpridas) */
+#regras-senha li {
+  color: #888; /* Cinza ou vermelho, como preferir */
+  transition: color 0.3s ease; /* Efeito suave na troca de cor */
+  list-style-type: none; /* Opcional: remove as bolinhas da lista */
+}
+
+/* Cor quando a regra for cumprida (classe adicionada pelo JS) */
+#regras-senha li.ok {
+  color: #28a745; /* Verde */
+  font-weight: bold;
+}
+
+/* Opcional: adicionar um ícone de check (✔) antes do texto quando cumprido */
+#regras-senha li.ok::before {
+  content: "✔ ";
+}
+#regras-senha li:not(.ok)::before {
+  content: "✖ ";
+  color: #dc3545; /* Vermelho pro X */
+}
+#regras-senha li.ok {
+  color: #28a745; /* Verde */
+}
+
+/* =================================================================
+   PAINEL ADMIN, TABELAS E MODAIS
+   ================================================================= */
+
+/* Tabelas do Bootstrap com o visual escuro do cartão */
+.cartao-black .table {
+  --bs-table-bg: transparent;
+  --bs-table-color: #e8e8e8;
+  --bs-table-border-color: rgba(255, 255, 255, 0.1);
+  --bs-table-hover-bg: rgba(255, 255, 255, 0.04);
+  --bs-table-hover-color: #fff;
+  margin-bottom: 0;
+}
+
+/* Cabeçalho das tabelas: pequeno, em maiúsculas e apagado */
+.cartao-black .table thead th {
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 500;
+}
+
+/* Números dos 4 cartões do resumo no topo do painel */
+.resumo-numero {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 1.8rem;
+  color: #f5d76e;
+  line-height: 1.1;
+}
+
+/* Etiqueta (selo) de status dentro das tabelas */
+.badge-status {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  color: #fff;
+  white-space: nowrap;
+}
+
+/* Veículo em manutenção (laranja) */
+.situacao-manutencao {
+  background: rgba(255, 152, 0, 0.85);
+  color: #1a1a1a;
+}
+
+/* Aluguel que ainda vai começar (azul) */
+.situacao-futuro {
+  background: rgba(70, 130, 220, 0.85);
+  color: #fff;
+}
+
+/* Abas Veículos | Aluguéis */
+.nav-pills .nav-link {
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  padding: 0.5rem 1.4rem;
+}
+
+.nav-pills .nav-link.active {
+  background: linear-gradient(135deg, #f5d76e, #b8892b);
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+/* Modais do Bootstrap com o visual de cartão, mais opacos para facilitar a leitura */
+.modal-content.cartao-black {
+  background: rgba(22, 22, 25, 0.96);
+}
+
+/* Botão X de fechar branco (o padrão é preto e some no fundo escuro) */
+.modal-content.cartao-black .btn-close {
+  filter: invert(1);
+}
+
+/* Calendário dos campos de data em tema escuro */
+.cartao-black input[type="date"] {
+  color-scheme: dark;
+}

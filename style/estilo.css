@@ -473,3 +473,13 @@ body {
 .cartao-black input[type="date"] {
   color-scheme: dark;
 }
+
+
+/* Miniatura da foto do veículo no painel admin */
+.miniatura-foto {
+  width: 56px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 8px;
+  vertical-align: middle;
+}

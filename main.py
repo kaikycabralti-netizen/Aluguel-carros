@@ -40,8 +40,21 @@ def pagina_login():
 
 
 @app.get("/catalogo.html")
-def pagina_catalogo():
+def pagina_catalogo(request: Request):
+    # só quem está logado vê o catálogo; senão volta pro login
+    if obter_usuario(request) is None:
+        return RedirectResponse("/", status_code=303)
     return FileResponse("view/catalogo.html")
+
+
+@app.get("/admin.html")
+def pagina_admin(request: Request):
+    usuario = obter_usuario(request)
+    if usuario is None:                      # não logado: vai pro login
+        return RedirectResponse("/", status_code=303)
+    if usuario["perfil"] != "admin":         # logado, mas não é admin
+        return RedirectResponse("/catalogo.html", status_code=303)
+    return FileResponse("view/admin.html")
 
 
 app.include_router(veiculos_router)

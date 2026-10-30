@@ -56,6 +56,7 @@ def criar_tabelas():
         ("usuarios", "email_mascarado", "TEXT"),
         ("veiculos", "preco_diaria", "REAL NOT NULL DEFAULT 0"),
         ("alugueis", "forma_pagamento", "TEXT"),
+        ("veiculos", "imagem", "TEXT"),   # caminho da foto, ex.: /static/uploads/abc123.png
     ]:
         existentes = [l["name"] for l in cursor.execute(f"PRAGMA table_info({tabela})")]
         if coluna not in existentes:

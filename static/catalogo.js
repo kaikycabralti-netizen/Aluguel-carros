@@ -375,7 +375,7 @@ async function carregarVeiculos() {
     preco: v.preco_diaria ?? 0,
     // qualquer status que comece com "dispon" é disponível; o resto aparece como alugado
     situacao: String(v.status).toLowerCase().startsWith('dispon') ? 'disponivel' : 'alugado',
-    imagem: '',
+    imagem: v.imagem || '',   // foto enviada pelo admin (vazio mostra o emoji)
   }));
 
   preencherMarcas();
