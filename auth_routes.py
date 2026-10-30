@@ -2,6 +2,7 @@
 # auth_routes.py  ->  cadastro, login, logout e "quem sou eu"
 # Todas as rotas começam com /api
 # ============================================================
+import hashlib
 import re
 import sqlite3
 
@@ -10,20 +11,17 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from db import conectar
-from seguranca import exige_login   # NOVO: usado na rota /api/me
+from seguranca import exige_login
 
-# O front chama /api/login, /api/registrar, /api/me e /api/logout
 auth_router = APIRouter(prefix="/api", tags=["auth"])
 
 
 class RegistroIn(BaseModel):
     nome: str = Field(min_length=2, max_length=100)
     cpf: str
-    email: EmailStr   # recusa e-mail com formato inválido
-    senha: str = Field(min_length=8, max_length=72)  # bcrypt só usa os 72 primeiros bytes
+    email: EmailStr
+    senha: str = Field(min_length=8, max_length=72)
 
-    # NOVO: a senha precisa de 1 maiúscula, 1 número e 1 caractere especial.
-    # A regra fica no servidor também, porque o JavaScript do navegador pode ser burlado.
     @field_validator("senha")
     @classmethod
     def senha_forte(cls, valor: str) -> str:
@@ -54,29 +52,78 @@ def cpf_valido(cpf: str) -> bool:
     return True
 
 
+def gerar_hash_busca(dado: str) -> str:
+    """Gera um hash SHA-256 determinístico para permitir buscas exatas no banco."""
+    return hashlib.sha256(dado.lower().strip().encode("utf-8")).hexdigest()
+
+
+def mascarar_email(email: str) -> str:
+    """Transforma 'usuario@email.com' em 'us****@email.com' para exibição segura."""
+    partes = email.split("@")
+    if len(partes) != 2:
+        return "***"
+    usuario, dominio = partes
+    if len(usuario) <= 2:
+        return f"{usuario[0]}***@{dominio}"
+    return f"{usuario[:2]}****@{dominio}"
+
+
+def mascarar_cpf(cpf: str) -> str:
+    """Transforma '12345678901' em '123.***.***-01'."""
+    nums = re.sub(r"\D", "", cpf)
+    if len(nums) != 11:
+        return "***.***.***-**"
+    return f"{nums[:3]}.***.***-{nums[9:]}"
+
+
 # ---------------------- CADASTRO ----------------------
 @auth_router.post("/registrar", status_code=201)
 async def registrar(dados: RegistroIn):
     if not cpf_valido(dados.cpf):
         raise HTTPException(status_code=422, detail="CPF inválido")
 
-    cpf = re.sub(r"\D", "", dados.cpf)
-    email = dados.email.lower()
-    # A senha é criptografada antes de ir para o banco (nunca em texto puro)
+    cpf_limpo = re.sub(r"\D", "", dados.cpf)
+    email_limpo = dados.email.lower()
+
+    # Geramos os hashes para busca e as versões mascaradas para exibição
+    email_hash = gerar_hash_busca(email_limpo)
+    cpf_hash = gerar_hash_busca(cpf_limpo)
+
+    email_mascarado = mascarar_email(email_limpo)
+    cpf_mascarado = mascarar_cpf(cpf_limpo)
+
     senha_hash = bcrypt.hashpw(dados.senha.encode("utf-8"), bcrypt.gensalt())
 
     conexao = conectar()
     try:
-        # Consulta parametrizada (?) contra SQL Injection.
-        # NOVO: todo cadastro pelo site vira 'cliente'. O admin nunca é criado
-        # pela tela, para ninguém conseguir se promover sozinho.
+        # ATENÇÃO: Sua tabela 'usuarios' no SQLite precisa ter colunas para os hashes!
+        # Exemplo de criação da tabela:
+        # CREATE TABLE usuarios (
+        #     id INTEGER PRIMARY KEY AUTOINCREMENT,
+        #     nome TEXT,
+        #     email_hash TEXT UNIQUE,
+        #     cpf_hash TEXT UNIQUE,
+        #     email_mascarado TEXT,
+        #     cpf_mascarado TEXT,
+        #     senha TEXT,
+        #     perfil TEXT
+        # );
         conexao.execute(
-            "INSERT INTO usuarios (nome, cpf, email, senha, perfil) VALUES (?, ?, ?, ?, 'cliente')",
-            (dados.nome.strip(), cpf, email, senha_hash.decode("utf-8")),
+            """
+            INSERT INTO usuarios (nome, email_hash, cpf_hash, email_mascarado, cpf_mascarado, senha, perfil) 
+            VALUES (?, ?, ?, ?, ?, ?, 'cliente')
+            """,
+            (
+                dados.nome.strip(),
+                email_hash,
+                cpf_hash,
+                email_mascarado,
+                cpf_mascarado,
+                senha_hash.decode("utf-8"),
+            ),
         )
         conexao.commit()
     except sqlite3.IntegrityError:
-        # CPF ou e-mail já cadastrado (colunas UNIQUE)
         raise HTTPException(status_code=409, detail="Usuário já cadastrado")
     finally:
         conexao.close()
@@ -87,32 +134,29 @@ async def registrar(dados: RegistroIn):
 # ---------------------- LOGIN ----------------------
 @auth_router.post("/login")
 async def login(dados: LoginIn, request: Request):
+    email_hash = gerar_hash_busca(dados.email.lower())
+
     conexao = conectar()
     try:
-        # NOVO: busca também o perfil
+        # Buscamos o usuário utilizando o hash do e-mail
         usuario = conexao.execute(
-            "SELECT id, nome, senha, perfil FROM usuarios WHERE email = ?",
-            (dados.email.lower(),),
+            "SELECT id, nome, senha, perfil FROM usuarios WHERE email_hash = ?",
+            (email_hash,),
         ).fetchone()
     finally:
         conexao.close()
 
-    # Mesma resposta para "usuário não existe" e "senha errada"
-    # (assim ninguém descobre quais e-mails estão cadastrados)
     if usuario is None or not bcrypt.checkpw(
         dados.senha.encode("utf-8"), usuario["senha"].encode("utf-8")
     ):
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
 
     request.session.clear()
-    request.session["usuario_id"] = usuario["id"]   # só o id fica na sessão
-    # NOVO: devolve também o perfil
+    request.session["usuario_id"] = usuario["id"]
     return {"mensagem": "Login bem-sucedido", "nome": usuario["nome"], "perfil": usuario["perfil"]}
 
 
-# ---------------------- QUEM SOU EU (NOVO) ----------------------
-# O catalogo.js chama esta rota para saber se deve mostrar o botão "Painel admin".
-# Depends(exige_login): sem login, responde 401.
+# ---------------------- QUEM SOU EU ----------------------
 @auth_router.get("/me")
 async def quem_sou_eu(usuario: dict = Depends(exige_login)):
     return {"nome": usuario["nome"], "perfil": usuario["perfil"]}
@@ -121,5 +165,5 @@ async def quem_sou_eu(usuario: dict = Depends(exige_login)):
 # ---------------------- LOGOUT ----------------------
 @auth_router.post("/logout")
 async def logout(request: Request):
-    request.session.clear()   # apaga a sessão
+    request.session.clear()
     return {"mensagem": "Sessão encerrada"}
