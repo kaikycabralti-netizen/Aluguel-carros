@@ -198,6 +198,21 @@
       </form>
     </dialog>
 
+        <!-- SEÇÃO: Meus Aluguéis -->
+    <section class="container my-5">
+        <h2 class="text-light mb-3">Meus Aluguéis</h2>
+        
+        <!-- Aviso se não houver aluguéis -->
+        <div id="meus-alugueis-vazio" class="text-muted d-none">
+            Você ainda não possui nenhum aluguel registrado.
+        </div>
+
+        <!-- Lista onde os aluguéis serão injetados dinamicamente via JS -->
+        <div id="meus-alugueis-lista" class="list-group"></div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
     <script src="/static/catalogo.js"></script>
   </body>
 </html>

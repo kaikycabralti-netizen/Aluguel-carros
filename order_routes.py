@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, model_validator
 
 from db import conectar
@@ -90,20 +90,38 @@ def formatar_aluguel(linha) -> dict:
 
 
 # ------------------------------------------------------------
+# GET /api/alugueis  ->  lista os aluguéis do usuário logado
+# ------------------------------------------------------------
+@order_router.get("", status_code=200)
+async def listar_alugueis(usuario: dict = Depends(exige_login)):
+    conexao = conectar()
+    try:
+        # Se for admin, pode ver todos; se for cliente, vê apenas os seus
+        if usuario.get("perfil") == "admin":
+            cursor = conexao.execute(CONSULTA_ALUGUEIS)
+        else:
+            cursor = conexao.execute(
+                CONSULTA_ALUGUEIS + " WHERE a.cliente_id = ?", (usuario["id"],)
+            )
+        
+        linhas = cursor.fetchall()
+        alugueis = [formatar_aluguel(linha) for linha in linhas]
+    finally:
+        conexao.close()
+
+    return alugueis
+
+
+# ------------------------------------------------------------
 # POST /api/alugueis  ->  cliente logado aluga um veículo
 # ------------------------------------------------------------
 @order_router.post("", status_code=201)
 async def criar_aluguel(dados: AluguelIn, usuario: dict = Depends(exige_login)):
-    # Depends(exige_login): se não estiver logado, nem entra aqui (401).
-    # "usuario" é quem fez login, vindo da sessão (não do JSON do front).
-
-    # Não deixa alugar com data de retirada no passado
     if dados.data_inicio < date.today():
         raise HTTPException(status_code=422, detail="A data inicial não pode ser no passado")
 
     conexao = conectar()
     try:
-        # Busca o veículo. O "?" é consulta parametrizada: evita SQL Injection.
         veiculo = conexao.execute(
             "SELECT id, status, preco_diaria FROM veiculos WHERE id = ?", (dados.veiculo_id,)
         ).fetchone()
@@ -111,33 +129,58 @@ async def criar_aluguel(dados: AluguelIn, usuario: dict = Depends(exige_login)):
         if veiculo is None:
             raise HTTPException(status_code=404, detail="Veículo não encontrado")
         if veiculo["status"] != "disponivel":
-            # 409 = conflito: o veículo existe, mas não pode ser alugado agora
             raise HTTPException(status_code=409, detail="Veículo indisponível")
         if veiculo["preco_diaria"] <= 0:
-            # Veículo cadastrado sem diária: o admin precisa definir o preço
             raise HTTPException(status_code=409, detail="Veículo sem preço de diária definido")
 
-        # PREÇO CALCULADO NO SERVIDOR: dias x diária do banco.
-        # O front não envia valor, então ninguém consegue falsificar o preço.
         dias = (dados.data_fim - dados.data_inicio).days
         valor_total = round(dias * veiculo["preco_diaria"], 2)
 
-        # Registra o aluguel em nome do usuário logado
         cursor = conexao.execute(
             """INSERT INTO alugueis
-                   (veiculo_id, cliente_id, data_inicio, data_fim, valor_total, forma_pagamento)
+                    (veiculo_id, cliente_id, data_inicio, data_fim, valor_total, forma_pagamento)
                VALUES (?, ?, ?, ?, ?, ?)""",
             (veiculo["id"], usuario["id"], dados.data_inicio.isoformat(),
              dados.data_fim.isoformat(), valor_total, dados.forma_pagamento),
         )
 
-        # Marca o veículo como alugado para sumir da lista de disponíveis
         conexao.execute("UPDATE veiculos SET status = 'alugado' WHERE id = ?", (veiculo["id"],))
-
-        conexao.commit()            # salva as duas operações juntas
-        novo_id = cursor.lastrowid  # id do aluguel recém-criado
+        conexao.commit()
+        novo_id = cursor.lastrowid
     finally:
-        conexao.close()             # sempre fecha a conexão, mesmo se der erro
+        conexao.close()
 
-    # O front usa isto para mostrar "Aluguel registrado: X dias · R$ Y"
     return {"id": novo_id, "dias": dias, "valor_total": valor_total}
+
+
+# ------------------------------------------------------------
+# DELETE /api/alugueis/{id}  ->  cliente cancela o seu aluguel
+# ------------------------------------------------------------
+@order_router.delete("/{aluguel_id}", status_code=200)
+async def cancelar_aluguel(aluguel_id: int, usuario: dict = Depends(exige_login)):
+    conexao = conectar()
+    try:
+        aluguel = conexao.execute(
+            "SELECT id, veiculo_id, cliente_id, data_inicio FROM alugueis WHERE id = ?", 
+            (aluguel_id,)
+        ).fetchone()
+
+        if aluguel is None:
+            raise HTTPException(status_code=404, detail="Aluguel não encontrado")
+
+        if aluguel["cliente_id"] != usuario["id"] and usuario.get("perfil") != "admin":
+            raise HTTPException(status_code=403, detail="Você não tem permissão para cancelar este aluguel")
+
+        data_inicio = como_data(aluguel["data_inicio"])
+        if data_inicio <= date.today():
+            raise HTTPException(status_code=400, detail="Não é possível cancelar um aluguel que já iniciou ou é para hoje.")
+
+        veiculo_id = aluguel["veiculo_id"]
+
+        conexao.execute("UPDATE veiculos SET status = 'disponivel' WHERE id = ?", (veiculo_id,))
+        conexao.execute("DELETE FROM alugueis WHERE id = ?", (aluguel_id,))
+        conexao.commit()
+    finally:
+        conexao.close()
+
+    return {"mensagem": "Aluguel cancelado com sucesso", "aluguel_id": aluguel_id}
